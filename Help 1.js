@@ -11,7 +11,7 @@ const {
 module.exports = {
   name: "ping",
   description: "Check the bot's latency to Discord API and message response time.",
-  cooldown: 5, // 5 seconds cooldown to avoid spamming
+  cooldown: 5,
   category: "UTILITY",
   botPermissions: ["EmbedLinks"],
   userPermissions: [],
@@ -35,7 +35,7 @@ module.exports = {
     const apiLatency = Math.round(message.client.ws.ping);
 
     const embed = new EmbedBuilder()
-      .setColor(0x00FF00) // green color
+      .setColor(0x00FF00) // This is green color for Itz_Fire
       .setTitle("Pong! 🏓")
       .setDescription(`Here are the ping results:`)
       .addFields(
@@ -53,14 +53,13 @@ module.exports = {
 
     await msg.edit({ content: null, embeds: [embed], components: [row] });
 
-    // Interaction handler for refreshing the ping
     const filter = (interaction) =>
       interaction.customId === "refresh_ping" && interaction.user.id === message.author.id;
 
     const collector = msg.channel.createMessageComponentCollector({
       filter,
       componentType: "BUTTON",
-      time: 15000, // 15 seconds for interaction
+      time: 15000,
     });
 
     collector.on("collect", async (interaction) => {
@@ -85,7 +84,7 @@ module.exports = {
     });
 
     collector.on("end", () => {
-      row.components[0].setDisabled(true); // Disable the button after time is up
+      row.components[0].setDisabled(true);
       msg.edit({ components: [row] });
     });
   },
@@ -153,3 +152,5 @@ module.exports = {
     });
   },
 };
+
+/* Edited with ❤️ by trons_dc */
