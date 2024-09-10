@@ -1,156 +1,104 @@
-const { 
-  EmbedBuilder, 
-  ActionRowBuilder, 
-  ButtonBuilder, 
-  ButtonStyle,
-} = require("discord.js");
+const { EmbedBuilder, ApplicationCommandOptionType } = require("discord.js");
+const { EMBED_COLORS } = require("@root/config");
 
 /**
  * @type {import("@structures/Command")}
  */
+
 module.exports = {
   name: "ping",
-  description: "Check the bot's latency to Discord API and message response time.",
-  cooldown: 5,
+  description: "Get the bot's ping",
+  cooldown: 0,
   category: "UTILITY",
   botPermissions: ["EmbedLinks"],
   userPermissions: [],
   command: {
     enabled: true,
-    aliases: ["latency"],
-    usage: "ping",
+    aliases: [],
+    usage: "",
     minArgsCount: 0,
   },
   slashCommand: {
-    enabled: true,
+    enabled: false,
     options: [],
   },
 
-  async messageRun(message, args, data) {
-    const startTime = Date.now();
-    const msg = await message.channel.send("🏓 Pinging...");
+  async messageRun(message, args) {
+    const response = await getPingData(message.client, message);
+    const sentMessage = await message.safeReply(response);
 
-    const endTime = Date.now();
-    const messageLatency = endTime - startTime;
-    const apiLatency = Math.round(message.client.ws.ping);
-
-    const embed = new EmbedBuilder()
-      .setColor(0x00FF00) // This is green color for Itz_Fire
-      .setTitle("Pong! 🏓")
-      .setDescription(`Here are the ping results:`)
-      .addFields(
-        { name: "Message Latency", value: `${messageLatency}ms`, inline: true },
-        { name: "API Latency", value: `${apiLatency}ms`, inline: true }
-      )
-      .setFooter({ text: "Ping test by your friendly bot!" });
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("refresh_ping")
-        .setLabel("🔄 Refresh")
-        .setStyle(ButtonStyle.Primary)
-    );
-
-    await msg.edit({ content: null, embeds: [embed], components: [row] });
-
-    const filter = (interaction) =>
-      interaction.customId === "refresh_ping" && interaction.user.id === message.author.id;
-
-    const collector = msg.channel.createMessageComponentCollector({
-      filter,
-      componentType: "BUTTON",
-      time: 15000,
-    });
-
-    collector.on("collect", async (interaction) => {
-      const newStartTime = Date.now();
-      await interaction.deferUpdate();
-
-      const newEndTime = Date.now();
-      const newMessageLatency = newEndTime - newStartTime;
-      const newApiLatency = Math.round(message.client.ws.ping);
-
-      const newEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle("Pong! 🏓 Refreshed")
-        .setDescription(`Here are the updated ping results:`)
-        .addFields(
-          { name: "Message Latency", value: `${newMessageLatency}ms`, inline: true },
-          { name: "API Latency", value: `${newApiLatency}ms`, inline: true }
-        )
-        .setFooter({ text: "Ping refreshed!" });
-
-      await msg.edit({ embeds: [newEmbed], components: [row] });
-    });
-
-    collector.on("end", () => {
-      row.components[0].setDisabled(true);
-      msg.edit({ components: [row] });
-    });
+    setTimeout(async () => {
+      try {
+        const expiredEmbed = new EmbedBuilder()
+          .setAuthor({ name: `${message.client.user.username} | Ping Command Expired`, iconURL: message.client.user.displayAvatarURL() })
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setDescription("This command has expired.\n➥〢 You can bring it again by using `!ping`")
+          .setTimestamp();
+    
+        await sentMessage.edit({ embeds: [expiredEmbed] });
+      } catch (error) {
+        console.error("Failed to edit message:", error);
+      }
+    }, 10000);
   },
 
-  async interactionRun(interaction, data) {
-    const startTime = Date.now();
-    await interaction.reply("🏓 Pinging...");
+  async interactionRun(interaction) {
+    const response = await getPingData(interaction.client, interaction);
+    const sentMessage = await interaction.followUp(response);
 
-    const endTime = Date.now();
-    const messageLatency = endTime - startTime;
-    const apiLatency = Math.round(interaction.client.ws.ping);
+    setTimeout(async () => {
+      try {
+        const expiredEmbed = new EmbedBuilder()
+          .setAuthor({ name: `${interaction.client.user.username} | Ping Command Expired`, iconURL: interaction.client.user.displayAvatarURL() })
+          .setColor(EMBED_COLORS.BOT_EMBED)
+          .setDescription("This command has expired.\n➥〢 You can bring it again by using `/ping`")
+          .setTimestamp();
 
-    const embed = new EmbedBuilder()
-      .setColor(0x00FF00)
-      .setTitle("Pong! 🏓")
-      .setDescription(`Here are the ping results:`)
-      .addFields(
-        { name: "Message Latency", value: `${messageLatency}ms`, inline: true },
-        { name: "API Latency", value: `${apiLatency}ms`, inline: true }
-      )
-      .setFooter({ text: "Ping test by your friendly bot!" });
-
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId("refresh_ping")
-        .setLabel("🔄 Refresh")
-        .setStyle(ButtonStyle.Primary)
-    );
-
-    await interaction.editReply({ content: null, embeds: [embed], components: [row] });
-
-    const filter = (i) =>
-      i.customId === "refresh_ping" && i.user.id === interaction.user.id;
-
-    const collector = interaction.channel.createMessageComponentCollector({
-      filter,
-      componentType: "BUTTON",
-      time: 15000,
-    });
-
-    collector.on("collect", async (i) => {
-      const newStartTime = Date.now();
-      await i.deferUpdate();
-
-      const newEndTime = Date.now();
-      const newMessageLatency = newEndTime - newStartTime;
-      const newApiLatency = Math.round(interaction.client.ws.ping);
-
-      const newEmbed = new EmbedBuilder()
-        .setColor(0x00FF00)
-        .setTitle("Pong! 🏓 Refreshed")
-        .setDescription(`Here are the updated ping results:`)
-        .addFields(
-          { name: "Message Latency", value: `${newMessageLatency}ms`, inline: true },
-          { name: "API Latency", value: `${newApiLatency}ms`, inline: true }
-        )
-        .setFooter({ text: "Ping refreshed!" });
-
-      await interaction.editReply({ embeds: [newEmbed], components: [row] });
-    });
-
-    collector.on("end", () => {
-      row.components[0].setDisabled(true);
-      interaction.editReply({ components: [row] });
-    });
-  },
+        await sentMessage.edit({ embeds: [expiredEmbed] });
+      } catch (error) {
+        console.error("Failed to edit message:", error);
+      }
+    }, 10000);
+  }
 };
 
-/* Edited with ❤️ by trons_dc */
+async function getPingData(client, message) {
+  let circles = {
+    good: '<:High:1267158758979538946>',
+    okay: '<:Mid:1267158913162285057>',
+    bad: '<:Low:1267158880903761930>',
+  };
+
+  const ws = client.ws.ping;
+  const msgEdit = Date.now() - message.createdTimestamp;
+
+  let days = Math.floor(client.uptime / 86400000);
+  let hours = Math.floor(client.uptime / 3600000) % 24;
+  let minutes = Math.floor(client.uptime / 60000) % 60;
+  let seconds = Math.floor(client.uptime / 1000) % 60;
+
+  const wsEmoji = ws <= 100 ? circles.good : ws <= 300 ? circles.okay : circles.bad;
+  const msgEmoji = msgEdit <= 150 ? circles.good : msgEdit <= 400 ? circles.okay : circles.bad;
+
+  const pingEmbed = new EmbedBuilder()
+    .setAuthor({ name: client.user.username, iconURL: client.user.displayAvatarURL() })
+    .setColor(EMBED_COLORS.BOT_EMBED)
+    .setTimestamp()
+    .setFooter({ text: `Ping requested` })
+    .addFields(
+      {
+        name: 'WebSocket Latency',
+        value: `${wsEmoji} \`${ws}ms\``,
+      },
+      {
+        name: 'API Latency',
+        value: `${msgEmoji} \`${msgEdit}ms\``,
+      },
+      {
+        name: `${client.user.username} Uptime`,
+        value: `<:Timer:1267159000416518174> \`${days} days, ${hours} hours, ${minutes} minutes, ${seconds}\``,
+      }
+    );
+
+  return { embeds: [pingEmbed] };
+}
